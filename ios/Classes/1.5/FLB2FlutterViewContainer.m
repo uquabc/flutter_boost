@@ -176,6 +176,7 @@ static NSUInteger kInstanceCounter = 0;
     }
  
     [super viewWillAppear:animated];
+<<<<<<< HEAD
 //    //instead of calling [super viewWillAppear:animated];, call super's super
 //    struct objc_super target = {
 //        .super_class = class_getSuperclass([FlutterViewController class]),
@@ -183,6 +184,15 @@ static NSUInteger kInstanceCounter = 0;
 //    };
 //    NSMethodSignature * (*callSuper)(struct objc_super *, SEL, BOOL animated) = (__typeof__(callSuper))objc_msgSendSuper;
 //    callSuper(&target, @selector(viewWillAppear:), animated);
+=======
+//     //instead of calling [super viewWillAppear:animated];, call super's super
+//     struct objc_super target = {
+//         .super_class = class_getSuperclass([FlutterViewController class]),
+//         .receiver = self,
+//     };
+//     NSMethodSignature * (*callSuper)(struct objc_super *, SEL, BOOL animated) = (__typeof__(callSuper))objc_msgSendSuper;
+//     callSuper(&target, @selector(viewWillAppear:), animated);
+>>>>>>> 55e8cf67fe0e49871438e68ec3e30846624eb849
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -220,6 +230,7 @@ static NSUInteger kInstanceCounter = 0;
                                                   params:_params
                                                 uniqueId:self.uniqueIDString];
     [super viewDidDisappear:animated];
+<<<<<<< HEAD
 //  instead of calling [super viewDidDisappear:animated];, call super's super
 //    struct objc_super target = {
 //        .super_class = class_getSuperclass([FlutterViewController class]),
@@ -227,6 +238,15 @@ static NSUInteger kInstanceCounter = 0;
 //    };
 //    NSMethodSignature * (*callSuper)(struct objc_super *, SEL, BOOL animated) = (__typeof__(callSuper))objc_msgSendSuper;
 //    callSuper(&target, @selector(viewDidDisappear:), animated);
+=======
+// //  instead of calling [super viewDidDisappear:animated];, call super's super
+//     struct objc_super target = {
+//         .super_class = class_getSuperclass([FlutterViewController class]),
+//         .receiver = self,
+//     };
+//     NSMethodSignature * (*callSuper)(struct objc_super *, SEL, BOOL animated) = (__typeof__(callSuper))objc_msgSendSuper;
+//     callSuper(&target, @selector(viewDidDisappear:), animated);
+>>>>>>> 55e8cf67fe0e49871438e68ec3e30846624eb849
 }
 
 - (void)installSplashScreenViewIfNecessary {
