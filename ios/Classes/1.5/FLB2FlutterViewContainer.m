@@ -43,7 +43,7 @@
 
 - (instancetype)init
 {
-    [FLUTTER_APP.flutterProvider prepareEngineIfNeeded];
+//    [FLUTTER_APP.flutterProvider prepareEngineIfNeeded];
     if(self = [super initWithEngine:FLUTTER_APP.flutterProvider.engine
                             nibName:nil
                              bundle:nil]){

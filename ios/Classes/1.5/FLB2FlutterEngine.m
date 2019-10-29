@@ -49,10 +49,10 @@
         }else{
             [_engine runWithEntrypoint:nil];
         }
-        _dummy = [[FLB2FlutterViewContainer alloc] initWithEngine:_engine
-                                                          nibName:nil
-                                                           bundle:nil];
-        _dummy.name = kIgnoreMessageWithName;
+//        _dummy = [[FLB2FlutterViewContainer alloc] initWithEngine:_engine
+//                                                          nibName:nil
+//                                                           bundle:nil];
+//        _dummy.name = kIgnoreMessageWithName;
         
         Class clazz = NSClassFromString(@"GeneratedPluginRegistrant");
         if (clazz) {
@@ -109,7 +109,7 @@
 - (void)atacheToViewController:(FlutterViewController *)vc
 {
     if(_engine.viewController != vc){
-        [(FLB2FlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
+//        [(FLB2FlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
         _engine.viewController = vc;
         NSLog(@"[XDEBUG]---surface changed--changed-");
     }
