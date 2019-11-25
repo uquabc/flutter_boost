@@ -74,7 +74,8 @@ public class NewFlutterBoost {
                 if (mCurrentActiveActivity == null) {
                     Debuger.log("Application entry foreground");
 
-                    if (createEngine() != null) {
+//                    if (createEngine() != null) {
+                    if(mEngine != null){
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "foreground");
                         channel().sendEvent("lifecycle", map);
@@ -98,7 +99,8 @@ public class NewFlutterBoost {
                 if (mCurrentActiveActivity == activity) {
                     Debuger.log("Application entry background");
 
-                    if (createEngine() != null) {
+//                    if (createEngine() != null) {
+                    if(mEngine != null){
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "background");
                         channel().sendEvent("lifecycle", map);
@@ -117,7 +119,8 @@ public class NewFlutterBoost {
                 if (mCurrentActiveActivity == activity) {
                     Debuger.log("Application entry background");
 
-                    if (createEngine() != null) {
+//                    if (createEngine() != null) {
+                    if(mEngine != null){
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "background");
                         channel().sendEvent("lifecycle", map);
