@@ -74,6 +74,8 @@ public class FlutterViewContainerManager implements IContainerManager {
     }
 
     void popRecord(IContainerRecord record) {
+        if(mRecordStack.empty()) return;
+
         if(mRecordStack.peek() == record) {
             mRecordStack.pop();
         }
@@ -82,11 +84,9 @@ public class FlutterViewContainerManager implements IContainerManager {
     void removeRecord(IContainerRecord record) {
         mRecordStack.remove(record);
         mRecordMap.remove(record.getContainer());
-        if(mRecordMap.isEmpty()){
-            if( FlutterBoost.instance().platform().whenEngineDestroy()== FlutterBoost.ConfigBuilder.All_FLUTTER_ACTIVITY_DESTROY){
-                FlutterBoost.instance().boostDestroy();
-            }
-        }
+//        if(mRecordMap.isEmpty()){
+//
+//        }
 
 
     }
@@ -135,7 +135,7 @@ public class FlutterViewContainerManager implements IContainerManager {
         urlParams.put(IContainerRecord.UNIQ_KEY,uniqueId);
 
         IContainerRecord currentTopRecord = getCurrentTopRecord();
-        if(onResult != null) {
+        if(onResult != null&&currentTopRecord!=null) {
             mOnResults.put(currentTopRecord.uniqueId(),onResult);
         }
 
