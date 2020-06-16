@@ -49,6 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)open:(NSString *)url
    urlParams:(NSDictionary *)urlParams
         exts:(NSDictionary *)exts
+       reult:(void (^)(NSDictionary *))resultCallback
       completion:(void (^)(BOOL finished))completion;
 
 /**

@@ -32,6 +32,7 @@
 - (void)open:(NSString *)name
    urlParams:(NSDictionary *)params
         exts:(NSDictionary *)exts
+       reult:(nonnull void (^)(NSDictionary * _Nonnull))resultCallback
   completion:(void (^)(BOOL))completion
 {
     if ([name isEqualToString:@"native"]) {//模拟打开native页面
@@ -73,4 +74,6 @@
         [self.navigationController popViewControllerAnimated:animated];
     }
 }
+
+
 @end
