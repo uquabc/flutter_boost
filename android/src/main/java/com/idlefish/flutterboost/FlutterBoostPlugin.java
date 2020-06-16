@@ -1,6 +1,8 @@
 package com.idlefish.flutterboost;
 
 import android.os.Handler;
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.idlefish.flutterboost.interfaces.IContainerRecord;
@@ -46,13 +48,6 @@ public class FlutterBoostPlugin {
         for (ActionAfterRegistered a : sActions) {
             a.onChannelRegistered(sInstance);
         }
-
-//        if (NewFlutterBoost.instance() != null) {
-//            final IStateListener stateListener = NewFlutterBoost.instance().mStateListener;
-//            if (stateListener != null) {
-//                stateListener.onChannelRegistered(registrar, sInstance);
-//            }
-//        }
 
         sActions.clear();
     }
@@ -196,7 +191,7 @@ public class FlutterBoostPlugin {
         @Override
         public void onMethodCall(MethodCall methodCall, final MethodChannel.Result result) {
 
-            FlutterViewContainerManager mManager = (FlutterViewContainerManager) NewFlutterBoost.instance().containerManager();
+            FlutterViewContainerManager mManager = (FlutterViewContainerManager) FlutterBoost.instance().containerManager();
             switch (methodCall.method) {
                 case "pageOnStart": {
                     Map<String, Object> pageInfo = new HashMap<>();
@@ -215,11 +210,11 @@ public class FlutterBoostPlugin {
                         }
 
                         result.success(pageInfo);
-                        NewFlutterBoost.instance().setFlutterPostFrameCallTime(new Date().getTime());
+                        FlutterBoost.instance().setFlutterPostFrameCallTime(new Date().getTime());
 
 
                     } catch (Throwable t) {
-                        result.error("no flutter page found!", t.getMessage(), t);
+                        result.error("no flutter page found!", t.getMessage(), Log.getStackTraceString(t));
                     }
                 }
                 break;
@@ -238,7 +233,7 @@ public class FlutterBoostPlugin {
                             }
                         });
                     } catch (Throwable t) {
-                        result.error("open page error", t.getMessage(), t);
+                        result.error("open page error", t.getMessage(), Log.getStackTraceString(t));
                     }
                 }
                 break;
@@ -251,7 +246,7 @@ public class FlutterBoostPlugin {
                         mManager.closeContainer(uniqueId, resultData, exts);
                         result.success(true);
                     } catch (Throwable t) {
-                        result.error("close page error", t.getMessage(), t);
+                        result.error("close page error", t.getMessage(), Log.getStackTraceString(t));
                     }
                 }
                 break;
@@ -263,7 +258,7 @@ public class FlutterBoostPlugin {
                         mManager.onShownContainerChanged(newId, oldId);
                         result.success(true);
                     } catch (Throwable t) {
-                        result.error("onShownContainerChanged", t.getMessage(), t);
+                        result.error("onShownContainerChanged", t.getMessage(), Log.getStackTraceString(t));
                     }
                 }
                 break;

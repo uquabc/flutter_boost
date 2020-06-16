@@ -17,9 +17,8 @@ import io.flutter.Log;
 import io.flutter.embedding.android.FlutterView;
 import io.flutter.embedding.android.SplashScreen;
 import io.flutter.embedding.engine.FlutterEngine;
-import io.flutter.embedding.engine.renderer.OnFirstFrameRenderedListener;
+import io.flutter.embedding.engine.renderer.FlutterUiDisplayListener;
 
-import java.util.Date;
 
 /**
  * {@code View} that displays a {@link SplashScreen} until a given {@link FlutterView}
@@ -49,8 +48,6 @@ public class FlutterSplashView extends FrameLayout {
         @Override
         public void onFlutterEngineAttachedToFlutterView(@NonNull FlutterEngine engine) {
             flutterView.removeFlutterEngineAttachmentListener(this);
-//            displayFlutterViewWithSplash(flutterView, splashScreen);
-//            splashScreenTransitionNeededNow();
         }
 
         @Override
@@ -59,42 +56,20 @@ public class FlutterSplashView extends FrameLayout {
     };
 
     @NonNull
-    private final OnFirstFrameRenderedListener onFirstFrameRenderedListener = new OnFirstFrameRenderedListener() {
-        int i=0;
+    private final FlutterUiDisplayListener onFirstFrameRenderedListener = new FlutterUiDisplayListener() {
         @Override
-        public void onFirstFrameRendered() {
-
-            if(NewFlutterBoost.instance().platform().whenEngineStart()== NewFlutterBoost.ConfigBuilder.FLUTTER_ACTIVITY_CREATED){
-                long now=new Date().getTime();
-                long flutterPostFrameCallTime=NewFlutterBoost.instance().getFlutterPostFrameCallTime();
-
-                if(flutterPostFrameCallTime!=0&& (now-flutterPostFrameCallTime)>800){
-                    if (splashScreen != null) {
-                        transitionToFlutter();
-                    }
-                    return;
-                }
-
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        onFirstFrameRenderedListener.onFirstFrameRendered();
-                    }
-                }, 200);
-
-
-            }else{
-                if (splashScreen != null) {
-                    transitionToFlutter();
-                }
+        public void onFlutterUiDisplayed() {
+            if (splashScreen != null) {
+                transitionToFlutter();
             }
+        }
 
-
-
-
-
+        @Override
+        public void onFlutterUiNoLongerDisplayed() {
 
         }
+
+
     };
 
     @NonNull
@@ -119,7 +94,7 @@ public class FlutterSplashView extends FrameLayout {
 
         setSaveEnabled(true);
         if (mFlutterEngine == null) {
-            mFlutterEngine = NewFlutterBoost.instance().engineProvider();
+            mFlutterEngine = FlutterBoost.instance().engineProvider();
         }
     }
 
@@ -155,79 +130,9 @@ public class FlutterSplashView extends FrameLayout {
             splashScreenView.setBackgroundColor(Color.WHITE);
             addView(this.splashScreenView);
             flutterView.addOnFirstFrameRenderedListener(onFirstFrameRenderedListener);
-
-
-//            if (splashScreen != null) {
-//                if (this.isSplashScreenNeededNow()) {
-//                    Log.v(TAG, "Showing splash screen UI.");
-//                    this.splashScreenView = splashScreen.createSplashView(this.getContext(), this.splashScreenState);
-//                    this.addView(this.splashScreenView);
-//                    flutterView.addOnFirstFrameRenderedListener(this.onFirstFrameRenderedListener);
-//                } else if (this.isSplashScreenTransitionNeededNow()) {
-//                    Log.v(TAG, "Showing an immediate splash transition to Flutter due to previously interrupted transition.");
-//                    this.splashScreenView = splashScreen.createSplashView(this.getContext(), this.splashScreenState);
-//                    this.addView(this.splashScreenView);
-//                    this.transitionToFlutter();
-//                } else if (!flutterView.isAttachedToFlutterEngine()) {
-//                    Log.v(TAG, "FlutterView is not yet attached to a FlutterEngine. Showing nothing until a FlutterEngine is attached.");
-//                    flutterView.addFlutterEngineAttachmentListener(this.flutterEngineAttachmentListener);
-//                }
-//            }
         }
     }
 
-
-
-
-
-    /**
-     * Returns true if current conditions require a splash UI to be displayed.
-     * <p>
-     * This method does not evaluate whether a previously interrupted splash transition needs
-     * to resume. See {@link #isSplashScreenTransitionNeededNow()} to answer that question.
-     */
-    private boolean isSplashScreenNeededNow() {
-        return flutterView != null
-                && flutterView.isAttachedToFlutterEngine()
-                && !flutterView.hasRenderedFirstFrame()
-                && !hasSplashCompleted();
-    }
-
-    /**
-     * Returns true if a previous splash transition was interrupted by recreation, e.g., an
-     * orientation change, and that previous transition should be resumed.
-     * <p>
-     * Not all splash screens are capable of remembering their transition progress. In those
-     * cases, this method will return false even if a previous visual transition was
-     * interrupted.
-     */
-    private boolean isSplashScreenTransitionNeededNow() {
-        return flutterView != null
-                && flutterView.isAttachedToFlutterEngine()
-                && splashScreen != null
-                && splashScreen.doesSplashViewRememberItsTransition()
-                && wasPreviousSplashTransitionInterrupted();
-    }
-
-    /**
-     * Returns true if a splash screen was transitioning to a Flutter experience and was then
-     * interrupted, e.g., by an Android configuration change. Returns false otherwise.
-     * <p>
-     * Invoking this method expects that a {@code flutterView} exists and it is attached to a
-     * {@code FlutterEngine}.
-     */
-    private boolean wasPreviousSplashTransitionInterrupted() {
-        if (flutterView == null) {
-            throw new IllegalStateException("Cannot determine if previous splash transition was " +
-                    "interrupted when no FlutterView is set.");
-        }
-        if (!flutterView.isAttachedToFlutterEngine()) {
-            throw new IllegalStateException("Cannot determine if previous splash transition was "
-                    + "interrupted when no FlutterEngine is attached to our FlutterView. This question "
-                    + "depends on an isolate ID to differentiate Flutter experiences.");
-        }
-        return flutterView.hasRenderedFirstFrame() && !hasSplashCompleted();
-    }
 
     /**
      * Returns true if a splash UI for a specific Flutter experience has already completed.
@@ -270,37 +175,6 @@ public class FlutterSplashView extends FrameLayout {
         Log.v(TAG, "Transitioning splash screen to a Flutter UI. Isolate: " + transitioningIsolateId);
         splashScreen.transitionToFlutter(onTransitionComplete);
     }
-
-    public static class SavedState extends BaseSavedState {
-        public static Creator CREATOR = new Creator() {
-            public FlutterSplashView.SavedState createFromParcel(Parcel source) {
-                return new FlutterSplashView.SavedState(source);
-            }
-
-            public FlutterSplashView.SavedState[] newArray(int size) {
-                return new FlutterSplashView.SavedState[size];
-            }
-        };
-        private String previousCompletedSplashIsolate;
-        private Bundle splashScreenState;
-
-        SavedState(Parcelable superState) {
-            super(superState);
-        }
-
-        SavedState(Parcel source) {
-            super(source);
-            this.previousCompletedSplashIsolate = source.readString();
-            this.splashScreenState = source.readBundle(this.getClass().getClassLoader());
-        }
-
-        public void writeToParcel(Parcel out, int flags) {
-            super.writeToParcel(out, flags);
-            out.writeString(this.previousCompletedSplashIsolate);
-            out.writeBundle(this.splashScreenState);
-        }
-    }
-
 
     @Override
     protected void onDetachedFromWindow() {

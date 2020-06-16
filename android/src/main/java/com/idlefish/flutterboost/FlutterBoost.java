@@ -5,77 +5,82 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import com.idlefish.flutterboost.interfaces.*;
-import io.flutter.Log;
 import io.flutter.embedding.android.FlutterView;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.embedding.engine.FlutterJNI;
 import io.flutter.embedding.engine.FlutterShellArgs;
 import io.flutter.embedding.engine.dart.DartExecutor;
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
-import io.flutter.embedding.engine.plugins.shim.ShimPluginRegistry;
-import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.embedding.engine.loader.FlutterLoader;
 import io.flutter.view.FlutterMain;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NewFlutterBoost {
-
+public class FlutterBoost {
     private Platform mPlatform;
 
     private FlutterViewContainerManager mManager;
     private FlutterEngine mEngine;
     private Activity mCurrentActiveActivity;
-    private PluginRegistry mRegistry;
-    static NewFlutterBoost sInstance = null;
+    private boolean mEnterActivityCreate =false;
+    static FlutterBoost sInstance = null;
+    private static boolean sInit;
 
-    private  long FlutterPostFrameCallTime=0;
+    private long FlutterPostFrameCallTime = 0;
+    private Application.ActivityLifecycleCallbacks mActivityLifecycleCallbacks;
 
-    public long getFlutterPostFrameCallTime(){
+    public long getFlutterPostFrameCallTime() {
         return FlutterPostFrameCallTime;
     }
 
-    public void setFlutterPostFrameCallTime(long FlutterPostFrameCallTime){
-         this.FlutterPostFrameCallTime=FlutterPostFrameCallTime;
+    public void setFlutterPostFrameCallTime(long FlutterPostFrameCallTime) {
+        this.FlutterPostFrameCallTime = FlutterPostFrameCallTime;
     }
-    public static NewFlutterBoost instance() {
+
+    public static FlutterBoost instance() {
         if (sInstance == null) {
-            sInstance = new NewFlutterBoost();
+            sInstance = new FlutterBoost();
         }
         return sInstance;
     }
 
     public void init(Platform platform) {
-
+        if (sInit){
+            Debuger.log("FlutterBoost is alread inited. Do not init twice");
+            return;
+        }
 
         mPlatform = platform;
         mManager = new FlutterViewContainerManager();
 
-
-
-        platform.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+        mActivityLifecycleCallbacks = new Application.ActivityLifecycleCallbacks() {
 
             @Override
             public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-                Log.e("bbbb1", "xxxxx");
-                mCurrentActiveActivity=activity;
+                //fix crash：'FlutterBoostPlugin not register yet'
+                //case: initFlutter after Activity.OnCreate method，and then called start/stop crash
+                // In SplashActivity ,showDialog(in OnCreate method) to check permission, if authorized, then init sdk and jump homePage)
+                mEnterActivityCreate = true;
+                mCurrentActiveActivity = activity;
                 if (mPlatform.whenEngineStart() == ConfigBuilder.ANY_ACTIVITY_CREATED) {
-                    Log.e("bbbb2", "xxxxx");
-
                     doInitialFlutter();
-
                 }
             }
 
             @Override
             public void onActivityStarted(Activity activity) {
+                if (!mEnterActivityCreate){
+                    return;
+                }
                 if (mCurrentActiveActivity == null) {
                     Debuger.log("Application entry foreground");
 
 //                    if (createEngine() != null) {
-                    if(mEngine != null){
+                    if (mEngine != null) {
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "foreground");
                         channel().sendEvent("lifecycle", map);
@@ -86,21 +91,29 @@ public class NewFlutterBoost {
 
             @Override
             public void onActivityResumed(Activity activity) {
+                if (!mEnterActivityCreate){
+                    return;
+                }
                 mCurrentActiveActivity = activity;
             }
 
             @Override
             public void onActivityPaused(Activity activity) {
-
+                if (!mEnterActivityCreate){
+                    return;
+                }
             }
 
             @Override
             public void onActivityStopped(Activity activity) {
+                if (!mEnterActivityCreate){
+                    return;
+                }
                 if (mCurrentActiveActivity == activity) {
                     Debuger.log("Application entry background");
 
 //                    if (createEngine() != null) {
-                    if(mEngine != null){
+                    if (mEngine != null) {
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "background");
                         channel().sendEvent("lifecycle", map);
@@ -111,67 +124,65 @@ public class NewFlutterBoost {
 
             @Override
             public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-
+                if (!mEnterActivityCreate){
+                    return;
+                }
             }
 
             @Override
             public void onActivityDestroyed(Activity activity) {
+                if (!mEnterActivityCreate){
+                    return;
+                }
                 if (mCurrentActiveActivity == activity) {
                     Debuger.log("Application entry background");
 
 //                    if (createEngine() != null) {
-                    if(mEngine != null){
+                    if (mEngine != null) {
                         HashMap<String, String> map = new HashMap<>();
                         map.put("type", "background");
                         channel().sendEvent("lifecycle", map);
                     }
                     mCurrentActiveActivity = null;
-                }
+                
             }
-        });
+        };
+        platform.getApplication().registerActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+
 
         if (mPlatform.whenEngineStart() == ConfigBuilder.IMMEDIATELY) {
 
             doInitialFlutter();
         }
-
-
+        sInit = true;
 
     }
 
     public void doInitialFlutter() {
-
-
-        if(mEngine!=null) return;
-
-        FlutterEngine flutterEngine = createEngine();
-        if(mPlatform.lifecycleListener!=null){
-            mPlatform.lifecycleListener.onEngineCreated();
-        }
-        if (flutterEngine.getDartExecutor().isExecutingDart()) {
-            // No warning is logged because this situation will happen on every config
-            // change if the developer does not choose to retain the Fragment instance.
-            // So this is expected behavior in many cases.
+        if (mEngine != null) {
             return;
         }
 
+        if (mPlatform.lifecycleListener != null) {
+            mPlatform.lifecycleListener.beforeCreateEngine();
+        }
+        FlutterEngine flutterEngine = createEngine();
+        if (mPlatform.lifecycleListener != null) {
+            mPlatform.lifecycleListener.onEngineCreated();
+        }
+        if (flutterEngine.getDartExecutor().isExecutingDart()) {
+            return;
+        }
 
-
-        // The engine needs to receive the Flutter app's initial route before executing any
-        // Dart code to ensure that the initial route arrives in time to be applied.
         if (mPlatform.initialRoute() != null) {
             flutterEngine.getNavigationChannel().setInitialRoute(mPlatform.initialRoute());
         }
-        // Configure the Dart entrypoint and execute it.
         DartExecutor.DartEntrypoint entrypoint = new DartExecutor.DartEntrypoint(
                 FlutterMain.findAppBundlePath(),
-                "main"
+                mPlatform.dartEntrypoint()
         );
 
         flutterEngine.getDartExecutor().executeDartEntrypoint(entrypoint);
-        mRegistry = new BoostPluginRegistry(createEngine());
-        registerPlugins();
-
     }
 
 
@@ -203,7 +214,10 @@ public class NewFlutterBoost {
 
         private INativeRouter router = null;
 
-        private  BoostLifecycleListener lifecycleListener;
+        private BoostLifecycleListener lifecycleListener;
+
+
+
 
         public ConfigBuilder(Application app, INativeRouter router) {
             this.router = router;
@@ -230,19 +244,17 @@ public class NewFlutterBoost {
             return this;
         }
 
-        public ConfigBuilder whenEngineStart( int whenEngineStart) {
+        public ConfigBuilder whenEngineStart(int whenEngineStart) {
             this.whenEngineStart = whenEngineStart;
             return this;
         }
-        public ConfigBuilder whenEngineDestory( int whenEngineDestory) {
-            this.whenEngineDestory = whenEngineDestory;
-            return this;
-        }
 
-        public ConfigBuilder lifecycleListener( BoostLifecycleListener lifecycleListener) {
+
+        public ConfigBuilder lifecycleListener(BoostLifecycleListener lifecycleListener) {
             this.lifecycleListener = lifecycleListener;
             return this;
         }
+
         public Platform build() {
 
             Platform platform = new Platform() {
@@ -255,6 +267,9 @@ public class NewFlutterBoost {
 
                     return ConfigBuilder.this.isDebug;
                 }
+
+                @Override
+                public String dartEntrypoint() { return ConfigBuilder.this.dartEntrypoint; }
 
                 @Override
                 public String initialRoute() {
@@ -270,18 +285,13 @@ public class NewFlutterBoost {
                     return ConfigBuilder.this.whenEngineStart;
                 }
 
-                @Override
-                public int whenEngineDestroy() {
-                    return ConfigBuilder.this.whenEngineDestory;
-                }
 
                 public FlutterView.RenderMode renderMode() {
                     return ConfigBuilder.this.renderMode;
                 }
             };
 
-            platform.lifecycleListener=this.lifecycleListener;
-
+            platform.lifecycleListener = this.lifecycleListener;
             return platform;
 
         }
@@ -308,63 +318,60 @@ public class NewFlutterBoost {
         return mManager.findContainerById(id);
     }
 
-    public PluginRegistry getPluginRegistry(){
-        return  mRegistry;
-    }
 
-    private FlutterEngine createEngine(){
+    private FlutterEngine createEngine() {
         if (mEngine == null) {
-
             FlutterMain.startInitialization(mPlatform.getApplication());
 
             FlutterShellArgs flutterShellArgs = new FlutterShellArgs(new String[0]);
             FlutterMain.ensureInitializationComplete(
                     mPlatform.getApplication().getApplicationContext(), flutterShellArgs.toArray());
 
-            mEngine = new FlutterEngine(mPlatform.getApplication().getApplicationContext());
+            mEngine = new FlutterEngine(mPlatform.getApplication().getApplicationContext(),FlutterLoader.getInstance(),new FlutterJNI(),null,false);
+            registerPlugins(mEngine);
+
         }
         return mEngine;
 
     }
 
-    private void registerPlugins() {
+    private void registerPlugins(FlutterEngine engine) {
         try {
-            Class clz = Class.forName("io.flutter.plugins.GeneratedPluginRegistrant");
-            Method method = clz.getDeclaredMethod("registerWith", PluginRegistry.class);
-            method.invoke(null, mRegistry);
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
+            Class<?> generatedPluginRegistrant = Class.forName("io.flutter.plugins.GeneratedPluginRegistrant");
+            Method registrationMethod = generatedPluginRegistrant.getDeclaredMethod("registerWith", FlutterEngine.class);
+            registrationMethod.invoke(null, engine);
+        } catch (Exception e) {
+            Debuger.exception(e);
         }
-
-        if(mPlatform.lifecycleListener!=null){
-            mPlatform.lifecycleListener.onPluginsRegistered();
-        }
-
-
     }
 
     public FlutterEngine engineProvider() {
-        return  mEngine;
+        return mEngine;
     }
 
 
-    public void boostDestroy(){
-        if(mEngine!=null){
+    public void boostDestroy() {
+        if (mEngine != null) {
             mEngine.destroy();
         }
-        if(mPlatform.lifecycleListener!=null){
+        if (mPlatform.lifecycleListener != null) {
             mPlatform.lifecycleListener.onEngineDestroy();
         }
-        mEngine=null;
-        mRegistry=null;
-        mCurrentActiveActivity=null;
+        mEngine = null;
+        mCurrentActiveActivity = null;
     }
 
 
     public interface BoostLifecycleListener {
+
+        void beforeCreateEngine();
+
         void onEngineCreated();
+
         void onPluginsRegistered();
+
         void onEngineDestroy();
     }
+
 
 }

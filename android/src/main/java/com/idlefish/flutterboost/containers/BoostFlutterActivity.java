@@ -2,9 +2,11 @@ package com.idlefish.flutterboost.containers;
 
 
 import android.app.Activity;
+
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LifecycleRegistry;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -15,13 +17,17 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import android.view.*;
 import android.widget.*;
-import com.idlefish.flutterboost.NewFlutterBoost;
-import com.idlefish.flutterboost.Utils;
+
+import com.idlefish.flutterboost.FlutterBoost;
 import com.idlefish.flutterboost.XFlutterView;
+import com.idlefish.flutterboost.XPlatformPlugin;
+
 import io.flutter.Log;
 import io.flutter.embedding.android.DrawableSplashScreen;
 import io.flutter.embedding.android.FlutterView;
@@ -29,13 +35,12 @@ import io.flutter.embedding.android.SplashScreen;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterShellArgs;
 import io.flutter.plugin.platform.PlatformPlugin;
-import io.flutter.view.FlutterMain;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NewBoostFlutterActivity extends Activity
+public class BoostFlutterActivity extends Activity
         implements FlutterActivityAndFragmentDelegate.Host,
         LifecycleOwner {
 
@@ -57,6 +62,7 @@ public class NewBoostFlutterActivity extends Activity
     // Default configuration.
     protected static final String DEFAULT_BACKGROUND_MODE = BackgroundMode.opaque.name();
 
+    private static XPlatformPlugin sXPlatformPlugin;
 
     public static Intent createDefaultIntent(@NonNull Context launchContext) {
         return withNewEngine().build(launchContext);
@@ -64,36 +70,32 @@ public class NewBoostFlutterActivity extends Activity
 
 
     public static NewEngineIntentBuilder withNewEngine() {
-        return new NewEngineIntentBuilder(NewBoostFlutterActivity.class);
+        return new NewEngineIntentBuilder(BoostFlutterActivity.class);
     }
 
 
     public static class NewEngineIntentBuilder {
-        private final Class<? extends NewBoostFlutterActivity> activityClass;
+        private final Class<? extends BoostFlutterActivity> activityClass;
         private String backgroundMode = DEFAULT_BACKGROUND_MODE;
         private String url = "";
         private Map params = new HashMap();
 
 
-
-        protected NewEngineIntentBuilder(@NonNull Class<? extends NewBoostFlutterActivity> activityClass) {
+        public NewEngineIntentBuilder(@NonNull Class<? extends BoostFlutterActivity> activityClass) {
             this.activityClass = activityClass;
         }
 
 
-
-
-        public NewEngineIntentBuilder url (@NonNull String url) {
+        public NewEngineIntentBuilder url(@NonNull String url) {
             this.url = url;
             return this;
         }
 
 
-        public NewEngineIntentBuilder params (@NonNull Map params) {
+        public NewEngineIntentBuilder params(@NonNull Map params) {
             this.params = params;
             return this;
         }
-
 
 
         public NewEngineIntentBuilder backgroundMode(@NonNull BackgroundMode backgroundMode) {
@@ -104,7 +106,7 @@ public class NewBoostFlutterActivity extends Activity
 
         public Intent build(@NonNull Context context) {
 
-            SerializableMap serializableMap=new SerializableMap();
+            SerializableMap serializableMap = new SerializableMap();
             serializableMap.setMap(params);
 
             return new Intent(context, activityClass)
@@ -117,7 +119,7 @@ public class NewBoostFlutterActivity extends Activity
 
     public static class SerializableMap implements Serializable {
 
-        private Map<String,Object> map;
+        private Map<String, Object> map;
 
         public Map<String, Object> getMap() {
             return map;
@@ -133,7 +135,7 @@ public class NewBoostFlutterActivity extends Activity
     @NonNull
     private LifecycleRegistry lifecycle;
 
-    public NewBoostFlutterActivity() {
+    public BoostFlutterActivity() {
         lifecycle = new LifecycleRegistry(this);
     }
 
@@ -175,7 +177,7 @@ public class NewBoostFlutterActivity extends Activity
     public SplashScreen provideSplashScreen() {
         Drawable manifestSplashDrawable = getSplashScreenFromManifest();
         if (manifestSplashDrawable != null) {
-            return new DrawableSplashScreen(manifestSplashDrawable, ImageView.ScaleType.CENTER,500L);
+            return new DrawableSplashScreen(manifestSplashDrawable, ImageView.ScaleType.CENTER, 500L);
         } else {
             return null;
         }
@@ -240,14 +242,16 @@ public class NewBoostFlutterActivity extends Activity
             Window window = getWindow();
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(Color.TRANSPARENT);
-            window.getDecorView().setSystemUiVisibility(PlatformPlugin.DEFAULT_SYSTEM_UI);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                window.getDecorView().setSystemUiVisibility(PlatformPlugin.DEFAULT_SYSTEM_UI | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            } else {
+                window.getDecorView().setSystemUiVisibility(PlatformPlugin.DEFAULT_SYSTEM_UI);
+            }
         }
-
-
     }
 
-    protected XFlutterView getFlutterView(){
-       return delegate.getFlutterView();
+    protected XFlutterView getFlutterView() {
+        return delegate.getFlutterView();
     }
 
     @Override
@@ -372,7 +376,6 @@ public class NewBoostFlutterActivity extends Activity
     }
 
 
-
     /**
      * Returns true if Flutter is running in "debug mode", and false otherwise.
      * <p>
@@ -432,7 +435,7 @@ public class NewBoostFlutterActivity extends Activity
     @Override
     public FlutterEngine provideFlutterEngine(@NonNull Context context) {
         // No-op. Hook for subclasses.
-        return NewFlutterBoost.instance().engineProvider();
+        return FlutterBoost.instance().engineProvider();
     }
 
     /**
@@ -446,12 +449,8 @@ public class NewBoostFlutterActivity extends Activity
 
     @Nullable
     @Override
-    public PlatformPlugin providePlatformPlugin(@Nullable Activity activity, @NonNull FlutterEngine flutterEngine) {
-        if (activity != null) {
-            return new PlatformPlugin(getActivity(), flutterEngine.getPlatformChannel());
-        } else {
-            return null;
-        }
+    public XPlatformPlugin providePlatformPlugin(@NonNull FlutterEngine flutterEngine) {
+        return BoostViewUtils.getPlatformPlugin(flutterEngine.getPlatformChannel());
     }
 
     /**
@@ -465,14 +464,16 @@ public class NewBoostFlutterActivity extends Activity
         // No-op. Hook for subclasses.
     }
 
+    @Override
+    public void cleanUpFlutterEngine(@NonNull FlutterEngine flutterEngine) {
+
+    }
+
 
     @Override
     public boolean shouldAttachEngineToActivity() {
         return true;
     }
-
-
-
 
 
     @Override
@@ -488,11 +489,11 @@ public class NewBoostFlutterActivity extends Activity
     public Map getContainerUrlParams() {
 
         if (getIntent().hasExtra(EXTRA_PARAMS)) {
-            SerializableMap serializableMap= (SerializableMap)getIntent().getSerializableExtra(EXTRA_PARAMS);
+            SerializableMap serializableMap = (SerializableMap) getIntent().getSerializableExtra(EXTRA_PARAMS);
             return serializableMap.getMap();
         }
 
-        Map<String,String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
 
         return params;
     }

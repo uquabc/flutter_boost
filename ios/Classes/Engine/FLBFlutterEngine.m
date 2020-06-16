@@ -35,13 +35,17 @@
 
 @implementation FLBFlutterEngine
     
-- (instancetype)initWithPlatform:(id<FLBPlatform> _Nullable)platform
+- (instancetype)initWithPlatform:(id<FLBPlatform> _Nullable)platform engine:(FlutterEngine * _Nullable)engine
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     
     if (self = [super init]) {
-        _engine = [[FlutterEngine alloc] initWithName:@"io.flutter" project:nil];
+        if(!engine){
+            _engine = [[FlutterEngine alloc] initWithName:@"io.flutter" project:nil];
+        }else{
+            _engine = engine;
+        }
         if(platform &&
            [platform respondsToSelector: @selector(entryForDart)] &&
            platform.entryForDart){
@@ -49,18 +53,10 @@
         }else{
             [_engine runWithEntrypoint:nil];
         }
-        _dummy = [[FLBFlutterViewContainer alloc] initWithEngine:_engine
-                                                          nibName:nil
-                                                           bundle:nil];
-        _dummy.name = kIgnoreMessageWithName;
-        
-        Class clazz = NSClassFromString(@"GeneratedPluginRegistrant");
-        if (clazz) {
-            if ([clazz respondsToSelector:NSSelectorFromString(@"registerWithRegistry:")]) {
-                [clazz performSelector:NSSelectorFromString(@"registerWithRegistry:")
-                            withObject:_engine];
-            }
-        }
+//        _dummy = [[FLBFlutterViewContainer alloc] initWithEngine:_engine
+//                                                          nibName:nil
+//                                                           bundle:nil];
+//        _dummy.name = kIgnoreMessageWithName;
     }
     
     return self;
@@ -69,7 +65,7 @@
 
 - (instancetype)init
 {
-    return [self initWithPlatform:nil];
+    return [self initWithPlatform:nil engine:nil];
 }
 
 - (void)pause
@@ -80,7 +76,9 @@
 
 - (void)resume
 {
-    [[_engine lifecycleChannel] sendMessage:@"AppLifecycleState.resumed"];
+    if([UIApplication sharedApplication].applicationState == UIApplicationStateActive){
+        [[_engine lifecycleChannel] sendMessage:@"AppLifecycleState.resumed"];
+    }
 }
 
 - (void)inactive
@@ -91,42 +89,42 @@
 
 - (void)didEnterBackground
 {
-    [BoostMessageChannel sendEvent:@"background"
-                         arguments:nil];
+    [BoostMessageChannel sendEvent:@"lifecycle"
+                         arguments:@{@"type":@"background"}];
 }
 
 - (void)willEnterForeground
 {
-    [BoostMessageChannel sendEvent:@"foreground"
-                         arguments:nil];
+    [BoostMessageChannel sendEvent:@"lifecycle"
+                         arguments:@{@"type":@"foreground"}];
 }
 
-- (FlutterEngine *)engine
-{
-    return _engine;
-}
-
-- (void)atacheToViewController:(FlutterViewController *)vc
+- (BOOL)atacheToViewController:(FlutterViewController *)vc
 {
     if(_engine.viewController != vc){
-        [(FLBFlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
         _engine.viewController = vc;
+        return YES;
     }
+    return NO;
 }
 
 - (void)detach
 {
     if(_engine.viewController != _dummy){
+        [(FLBFlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
         _engine.viewController = _dummy;
     }
 }
 
 - (void)prepareEngineIfNeeded
 {
-    [(FLBFlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
-    NSLog(@"[XDEBUG]---surface changed--reset-");
+//    [(FLBFlutterViewContainer *)_engine.viewController surfaceUpdated:NO];
+//    NSLog(@"[XDEBUG]---surface changed--reset-");
 //    [self detach];
 }
 
+- (void)dealloc{
+    [self.engine setViewController:nil];
+}
 @end
 
