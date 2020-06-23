@@ -42,12 +42,12 @@ typedef PrePushRoute = Route<T> Function<T>(String url, String uniqueId,
     Map<String, dynamic> params, Route<dynamic> route);
 
 typedef PostPushRoute = void Function(
-  String url,
-  String uniqueId,
-  Map<String, dynamic> params,
-  Route<dynamic> route,
-  Future<dynamic> result,
-);
+    String url,
+    String uniqueId,
+    Map<String, dynamic> params,
+    Route<dynamic> route,
+    Future<dynamic> result,
+    );
 
 class FlutterBoost {
   FlutterBoost() {
@@ -59,10 +59,9 @@ class FlutterBoost {
   static FlutterBoost get singleton => _instance;
 
   final GlobalKey<ContainerManagerState> containerManagerKey =
-      GlobalKey<ContainerManagerState>();
+  GlobalKey<ContainerManagerState>();
   final ObserversHolder _observersHolder = ObserversHolder();
   final BoostChannel _boostChannel = BoostChannel();
-
 
 
   static ContainerManagerState get containerManager =>
@@ -77,21 +76,20 @@ class FlutterBoost {
             pageInfo.containsKey("params") &&
             pageInfo.containsKey("uniqueId")) {
           ContainerCoordinator.singleton.nativeContainerDidShow(
-              pageInfo["name"], pageInfo["params"], pageInfo["uniqueId"]);
+              pageInfo["name"], Map<String,dynamic>.from(pageInfo["params"]), pageInfo["uniqueId"]);
         }
       });
     });
   }
 
-  static TransitionBuilder init(
-      {TransitionBuilder builder,
-      PrePushRoute prePush,
-      PostPushRoute postPush}) {
+  static TransitionBuilder init({TransitionBuilder builder,
+    PrePushRoute prePush,
+    PostPushRoute postPush}) {
     if (Platform.isAndroid) {
       onPageStart();
     } else if (Platform.isIOS) {
       assert(() {
-        () async {
+            () async {
           onPageStart();
         }();
         return true;
@@ -130,8 +128,7 @@ class FlutterBoost {
     ContainerCoordinator.singleton.registerPageBuilders(builders);
   }
 
-  Future<Map<dynamic, dynamic>> open(
-    String url, {
+  Future<Map<dynamic, dynamic>> open(String url, {
     Map<String, dynamic> urlParams,
     Map<String, dynamic> exts,
   }) {
@@ -142,8 +139,7 @@ class FlutterBoost {
     return channel.invokeMethod<Map<dynamic, dynamic>>('openPage', properties);
   }
 
-  Future<bool> close(
-    String id, {
+  Future<bool> close(String id, {
     Map<String, dynamic> result,
     Map<String, dynamic> exts,
   }) {
@@ -185,8 +181,7 @@ class FlutterBoost {
     return close(settings.uniqueId, result: result, exts: exts);
   }
 
-  Future<bool> closeByContext(
-    BuildContext context, {
+  Future<bool> closeByContext(BuildContext context, {
     Map<String, dynamic> result,
     Map<String, dynamic> exts,
   }) {
@@ -204,8 +199,7 @@ class FlutterBoost {
       _observersHolder.addObserver<BoostContainerObserver>(observer);
 
   /// Register for Container lifecycle callbacks
-  VoidCallback addBoostContainerLifeCycleObserver(
-          BoostContainerLifeCycleObserver observer) =>
+  VoidCallback addBoostContainerLifeCycleObserver(BoostContainerLifeCycleObserver observer) =>
       _observersHolder.addObserver<BoostContainerLifeCycleObserver>(observer);
 
   /// Register callbacks for [Navigator.push] & [Navigator.pop]
