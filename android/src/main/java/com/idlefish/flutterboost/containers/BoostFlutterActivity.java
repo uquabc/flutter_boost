@@ -3,6 +3,7 @@ package com.idlefish.flutterboost.containers;
 
 import android.app.Activity;
 
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LifecycleRegistry;
@@ -40,7 +41,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BoostFlutterActivity extends Activity
+public class BoostFlutterActivity extends FragmentActivity
         implements FlutterActivityAndFragmentDelegate.Host,
         LifecycleOwner {
 
@@ -132,12 +133,12 @@ public class BoostFlutterActivity extends Activity
 
     private FlutterActivityAndFragmentDelegate delegate;
 
-    @NonNull
-    private LifecycleRegistry lifecycle;
+//    @NonNull
+//    private LifecycleRegistry lifecycle = new LifecycleRegistry(this);
 
-    public BoostFlutterActivity() {
-        lifecycle = new LifecycleRegistry(this);
-    }
+//    public BoostFlutterActivity() {
+//        lifecycle = new LifecycleRegistry(this);
+//    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -145,7 +146,7 @@ public class BoostFlutterActivity extends Activity
 
         super.onCreate(savedInstanceState);
 
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
+//        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
 
         delegate = new FlutterActivityAndFragmentDelegate(this);
         delegate.onAttach(this);
@@ -257,14 +258,14 @@ public class BoostFlutterActivity extends Activity
     @Override
     protected void onStart() {
         super.onStart();
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
+//        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
         delegate.onStart();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
+//        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
         delegate.onResume();
     }
 
@@ -278,7 +279,7 @@ public class BoostFlutterActivity extends Activity
     protected void onPause() {
         super.onPause();
         delegate.onPause();
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE);
+//        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE);
     }
 
     @Override
@@ -358,11 +359,11 @@ public class BoostFlutterActivity extends Activity
      * needed. This reference is used by the delegate to provide Flutter plugins with access
      * to lifecycle events.
      */
-    @Override
-    @NonNull
-    public Lifecycle getLifecycle() {
-        return lifecycle;
-    }
+//    @Override
+//    @NonNull
+//    public Lifecycle getLifecycle() {
+//        return lifecycle;
+//    }
 
     /**
      * {@link FlutterActivityAndFragmentDelegate.Host} method that is used by
